@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Börsenuhr — Weltmärkte im Blick</title>
+<style>
+  :root{
+    --bg: #0B1120;
+    --panel: #121B2E;
+    --panel-2: #16213A;
+    --hairline: #253453;
+    --ink: #E9EDF6;
+    --muted: #8291B3;
+    --gold: #C9A24B;
+    --gold-dim: #8a7238;
+    --blue: #5B93FF;
+    --red: #FF6262;
+    --green: #37CC8B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #16213a 0%, var(--bg) 60%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    padding:28px 16px 60px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+
+  /* Header */
+  header{display:flex;flex-direction:column;gap:18px;margin-bottom:28px;}
+  .eyebrow{
+    font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--gold);font-weight:600;
+  }
+  h1{
+    margin:4px 0 0;font-size:clamp(26px,5vw,36px);font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .sub{color:var(--muted);font-size:14px;margin-top:6px;max-width:56ch;line-height:1.5;}
+
+  .clockbar{
+    display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:16px 18px;
+  }
+  .localtime{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+  .localtime .flap{font-size:28px;}
+  .localtime .zoneline{color:var(--muted);font-size:12.5px;}
+  select{
+    background:var(--panel);
+    color:var(--ink);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    padding:9px 12px;
+    font-size:13px;
+    font-family:inherit;
+  }
+  select:focus{outline:2px solid var(--blue);outline-offset:1px;}
+
+  /* Flap digits */
+  .flap{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Roboto Mono",monospace;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:0.02em;
+  }
+  .flap.flash{animation:flashDigit .35s ease;}
+  @keyframes flashDigit{
+    0%{opacity:.25; transform:translateY(-2px);}
+    100%{opacity:1; transform:translateY(0);}
+  }
+
+  /* Exchange grid */
+  .grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:22px;}
+  @media(min-width:640px){.grid{grid-template-columns:1fr 1fr;}}
+
+  .card{
+    position:relative;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--hairline);
+    border-radius:16px;
+    padding:18px 18px 16px;
+    overflow:hidden;
+  }
+  .card .rule{
+    position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent, var(--gold-dim), transparent);
+    opacity:.6;
+  }
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .exname{font-size:16px;font-weight:700;}
+  .excity{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .status{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;
+    padding:4px 9px;border-radius:100px;border:1px solid var(--hairline);
+    white-space:nowrap;
+  }
+  .status .dot{width:7px;height:7px;border-radius:50%;}
+  .status.open{color:var(--green);}
+  .status.open .dot{background:var(--green);box-shadow:0 0 8px var(--green);}
+  .status.closed{color:var(--muted);}
+  .status.closed .dot{background:var(--muted);}
+
+  .readout{margin-top:16px;}
+  .readout .label{
+    font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+    margin-bottom:4px;
+  }
+  .readout .value{
+    font-size:30px;font-weight:700;
+  }
+  .value.blue{color:var(--blue);}
+  .value.red{color:var(--red);}
+  .value small{font-size:14px;font-weight:600;margin-left:6px;color:var(--muted);}
+
+  .progress{
+    margin-top:14px;height:4px;border-radius:4px;background:var(--hairline);overflow:hidden;
+  }
+  .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));}
+
+  .card-foot{
+    display:flex;justify-content:space-between;align-items:center;margin-top:14px;
+  }
+  .hours{color:var(--muted);font-size:12px;}
+  .removebtn{
+    background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;
+    padding:4px 6px;border-radius:6px;
+  }
+  .removebtn:hover{color:var(--red);background:rgba(255,98,98,.08);}
+
+  /* Add section */
+  .addrow{margin-top:26px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .addrow .label{color:var(--muted);font-size:12.5px;margin-right:4px;}
+  button.pill{
+    background:var(--panel-2);border:1px solid var(--hairline);color:var(--ink);
+    border-radius:100px;padding:8px 14px;font-size:13px;cursor:pointer;
+  }
+  button.pill:hover{border-color:var(--gold-dim);}
+  button.pill.primary{
+    background:linear-gradient(180deg,#2a3a63,#1c2846);border-color:#3a4c7c;
+  }
+
+  dialog{
+    background:var(--panel);color:var(--ink);border:1px solid var(--hairline);
+    border-radius:14px;padding:0;max-width:420px;width:92vw;
+  }
+  dialog::backdrop{background:rgba(4,8,16,.6);}
+  .dialog-inner{padding:20px;}
+  .dialog-inner h2{margin:0 0 4px;font-size:17px;}
+  .dialog-inner p.hint{color:var(--muted);font-size:12.5px;margin:0 0 16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+  .field input{
+    width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ink);
+    border-radius:8px;padding:9px 10px;font-size:14px;font-family:inherit;
+  }
+  .field input:focus{outline:2px solid var(--blue);outline-offset:1px;}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .err{color:var(--red);font-size:12px;min-height:16px;margin-top:2px;}
+
+  footer{margin-top:30px;color:var(--muted);font-size:11.5px;line-height:1.6;}
+  footer code{color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="eyebrow">Weltmärkte · Live</div>
+      <h1>Börsenuhr</h1>
+      <div class="sub">Öffnungs- und Schlusszeiten der wichtigsten Börsen. Ist ein Termin nah, zeigt die Karte einen Countdown — blau fürs Öffnen, rot fürs Schließen. Sonst die feste Uhrzeit in deiner gewählten Zeitzone.</div>
+    </div>
+
+    <div class="clockbar">
+      <div class="localtime">
+        <span class="flap" id="nowClock" style="font-weight:700;">--:--:--</span>
+        <span class="zoneline" id="nowDate">–</span>
+      </div>
+      <div>
+        <select id="zoneSelect" aria-label="Anzeige-Zeitzone"></select>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="addrow">
+    <span class="label">Hinzufügen:</span>
+    <button class="pill" data-preset="frankfurt">Frankfurt (Xetra)</button>
+    <button class="pill" data-preset="hongkong">Hongkong (HKEX)</button>
+    <button class="pill" data-preset="shanghai">Shanghai (SSE)</button>
+    <button class="pill" data-preset="sydney">Sydney (ASX)</button>
+    <button class="pill primary" id="openCustom">+ eigene Börse</button>
+  </div>
+
+  <footer>
+    Zeiten sind reguläre Handelszeiten (Mo–Fr, ohne Feiertage/Sonderhandel). Tokio-Mittagspause wird nicht separat abgebildet. Countdown erscheint automatisch innerhalb von <code>3 Std.</code> vor dem Ereignis.
+  </footer>
+</div>
+
+<dialog id="dlg">
+  <div class="dialog-inner">
+    <h2>Eigene Börse hinzufügen</h2>
+    <p class="hint">Zeitzone als IANA-Name, z.B. <code>Europe/Paris</code>, <code>Asia/Singapore</code>.</p>
+    <div class="field">
+      <label for="fName">Name</label>
+      <input id="fName" placeholder="z.B. Euronext Paris" />
+    </div>
+    <div class="field">
+      <label for="fCity">Ort (Zusatzzeile)</label>
+      <input id="fCity" placeholder="z.B. Paris" />
+    </div>
+    <div class="field">
+      <label for="fTz">Zeitzone (IANA)</label>
+      <input id="fTz" placeholder="Europe/Paris" list="tzlist" />
+      <datalist id="tzlist"></datalist>
+    </div>
+    <div class="twocol">
+      <div class="field">
+        <label for="fOpen">Öffnet (lokal)</label>
+        <input id="fOpen" placeholder="09:00" />
+      </div>
+      <div class="field">
+        <label for="fClose">Schließt (lokal)</label>
+        <input id="fClose" placeholder="17:30" />
+      </div>
+    </div>
+    <div class="err" id="fErr"></div>
+    <div class="dialog-actions">
+      <button class="pill" id="cancelCustom">Abbrechen</button>
+      <button class="pill primary" id="saveCustom">Hinzufügen</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  "use strict";
+
+  const NEAR_THRESHOLD_MS = 3 * 60 * 60 * 1000; // 3 Std. -> switch to countdown
+
+  const DEFAULT_EXCHANGES = [
+    { id:"tse",  name:"Tokyo Stock Exchange", city:"Tokio",     tz:"Asia/Tokyo",       open:"09:00", close:"15:00", removable:false },
+    { id:"lse",  name:"London Stock Exchange", city:"London",   tz:"Europe/London",   open:"08:00", close:"16:30", removable:false },
+    { id:"nyse", name:"New York Stock Exchange", city:"New York", tz:"America/New_York", open:"09:30", close:"16:00", removable:false },
+  ];
+
+  const PRESETS = {
+    frankfurt: { id:"xetra_"+Date.now(), name:"Deutsche Börse (Xetra)", city:"Frankfurt", tz:"Europe/Berlin", open:"09:00", close:"17:30", removable:true },
+    hongkong:  { id:"hkex_"+Date.now(),  name:"Hong Kong Exchanges",     city:"Hongkong",  tz:"Asia/Hong_Kong", open:"09:30", close:"16:00", removable:true },
+    shanghai:  { id:"sse_"+Date.now(),   name:"Shanghai Stock Exchange", city:"Shanghai",  tz:"Asia/Shanghai", open:"09:30", close:"15:00", removable:true },
+    sydney:    { id:"asx_"+Date.now(),   name:"Australian Securities Exchange", city:"Sydney", tz:"Australia/Sydney", open:"10:00", close:"16:00", removable:true },
+  };
+
+  const ZONE_OPTIONS = [
+    { tz:"Europe/Berlin", label:"Mitteleuropäische Zeit (Berlin)" },
+    { tz:"Europe/London", label:"London (GMT/BST)" },
+    { tz:"America/New_York", label:"New York (ET)" },
+    { tz:"Asia/Tokyo", label:"Tokio (JST)" },
+    { tz:"Asia/Shanghai", label:"Shanghai (CST)" },
+    { tz:"Australia/Sydney", label:"Sydney (AET)" },
+    { tz:"UTC", label:"UTC" },
+  ];
+
+  let exchanges = DEFAULT_EXCHANGES.slice();
+  let displayTz = "Europe/Berlin";
+  let lastRenderedSecond = {};
+
+  // ---------- storage ----------
+  async function loadState(){
+    try{
+      const custom = await window.storage.get("custom-exchanges", false);
+      if(custom && custom.value){
+        const arr = JSON.parse(custom.value);
+        if(Array.isArray(arr)) exchanges = DEFAULT_EXCHANGES.concat(arr);
+      }
+    }catch(e){ /* no custom exchanges yet */ }
+    try{
+      const tzPref = await window.storage.get("display-timezone", false);
+      if(tzPref && tzPref.value) displayTz = tzPref.value;
+    }catch(e){ /* default stays */ }
+  }
+  async function saveCustomExchanges(){
+    const custom = exchanges.filter(e=>e.removable);
+    try{ await window.storage.set("custom-exchanges", JSON.stringify(custom), false); }
+    catch(e){ console.error("Speichern fehlgeschlagen", e); }
+  }
+  async function saveTzPref(){
+    try{ await window.storage.set("display-timezone", displayTz, false); }
+    catch(e){ console.error("Speichern fehlgeschlagen", e); }
+  }
+
+  // ---------- timezone math ----------
+  function getTzOffsetMs(date, timeZone){
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone, hour12:false,
+      year:"numeric", month:"2-digit", day:"2-digit",
+      hour:"2-digit", minute:"2-digit", second:"2-digit"
+    });
+    const parts = {};
+    dtf.formatToParts(date).forEach(p=>{ if(p.type!=="literal") parts[p.type]=p.value; });
+    let hour = parts.hour === "24" ? 0 : Number(parts.hour);
+    const asUTC = Date.UTC(Number(parts.year), Number(parts.month)-1, Number(parts.day), hour, Number(parts.minute), Number(parts.second));
+    return asUTC - date.getTime();
+  }
+
+  function zonedTimeToUtc(y,m,d,hh,mm,timeZone){
+    const guess = Date.UTC(y, m-1, d, hh, mm, 0);
+    let offset = getTzOffsetMs(new Date(guess), timeZone);
+    let utc = guess - offset;
+    offset = getTzOffsetMs(new Date(utc), timeZone);
+    utc = guess - offset;
+    return new Date(utc);
+  }
+
+  function getZonedParts(date, timeZone){
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone, hour12:false,
+      year:"numeric", month:"2-digit", day:"2-digit",
+      hour:"2-digit", minute:"2-digit", second:"2-digit", weekday:"short"
+    });
+    const parts = {};
+    dtf.formatToParts(date).forEach(p=>{ if(p.type!=="literal") parts[p.type]=p.value; });
+    return parts;
+  }
+
+  // Build open/close event instants for an exchange around "now"
+  function buildEvents(ex, now){
+    const localNow = getZonedParts(now, ex.tz);
+    const baseUTCnoon = Date.UTC(Number(localNow.year), Number(localNow.month)-1, Number(localNow.day), 12, 0, 0);
+    const [oh, om] = ex.open.split(":").map(Number);
+    const [ch, cm] = ex.close.split(":").map(Number);
+    const events = [];
+    for(let dayOffset=-2; dayOffset<=9; dayOffset++){
+      const candidate = new Date(baseUTCnoon + dayOffset*86400000);
+      const weekday = candidate.getUTCDay(); // 0=Sun..6=Sat
+      if(weekday>=1 && weekday<=5){
+        const y = candidate.getUTCFullYear(), m = candidate.getUTCMonth()+1, d = candidate.getUTCDate();
+        const openUtc = zonedTimeToUtc(y,m,d,oh,om,ex.tz);
+        const closeUtc = zonedTimeToUtc(y,m,d,ch,cm,ex.tz);
+        if(closeUtc > openUtc){
+          events.push({type:"open", at:openUtc});
+          events.push({type:"close", at:closeUtc});
+        }
+      }
+    }
+    events.sort((a,b)=>a.at-b.at);
+    return events;
+  }
+
+  function computeStatus(ex, now){
+    const events = buildEvents(ex, now);
+    let isOpen = false, sessionOpenAt=null;
+    let next = null;
+    for(const ev of events){
+      if(ev.at <= now){
+        if(ev.type==="open"){ isOpen = true; sessionOpenAt = ev.at; }
+        else { isOpen = false; sessionOpenAt = null; }
+      } else if(!next){
+        next = ev;
+        break;
+      }
+    }
+    return { isOpen, sessionOpenAt, next, events };
+  }
+
+  // ---------- formatting ----------
+  function fmtClockInTz(date, timeZone){
+    const p = getZonedParts(date, timeZone);
+    const dtfNow = getZonedParts(new Date(), timeZone);
+    const sameDay = p.year===dtfNow.year && p.month===dtfNow.month && p.day===dtfNow.day;
+    const time = `${p.hour}:${p.minute}`;
+    if(sameDay) return time;
+    const weekdayMap = {Mon:"Mo",Tue:"Di",Wed:"Mi",Thu:"Do",Fri:"Fr",Sat:"Sa",Sun:"So"};
+    return `${weekdayMap[p.weekday]||p.weekday} ${time}`;
+  }
+
+  function fmtCountdown(ms){
+    const totalSec = Math.max(0, Math.floor(ms/1000));
+    const h = Math.floor(totalSec/3600);
+    const m = Math.floor((totalSec%3600)/60);
+    const s = totalSec%60;
+    const pad = n=>String(n).padStart(2,"0");
+    return h>0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+  }
+
+  // ---------- rendering ----------
+  function populateZoneSelect(){
+    const sel = document.getElementById("zoneSelect");
+    sel.innerHTML = "";
+    ZONE_OPTIONS.forEach(z=>{
+      const opt = document.createElement("option");
+      opt.value = z.tz; opt.textContent = z.label;
+      if(z.tz===displayTz) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.onchange = ()=>{ displayTz = sel.value; saveTzPref(); renderAll(true); };
+  }
+
+  function populateTzDatalist(){
+    const dl = document.getElementById("tzlist");
+    dl.innerHTML = "";
+    const commonTz = ["Europe/Berlin","Europe/London","Europe/Paris","Europe/Zurich","Europe/Madrid","Europe/Rome",
+      "America/New_York","America/Chicago","America/Los_Angeles","America/Sao_Paulo","America/Toronto",
+      "Asia/Tokyo","Asia/Shanghai","Asia/Hong_Kong","Asia/Singapore","Asia/Dubai","Asia/Kolkata",
+      "Australia/Sydney","Pacific/Auckland","UTC"];
+    commonTz.forEach(tz=>{
+      const o = document.createElement("option"); o.value = tz; dl.appendChild(o);
+    });
+  }
+
+  function renderClockBar(now){
+    const clockEl = document.getElementById("nowClock");
+    const dateEl = document.getElementById("nowDate");
+    const p = getZonedParts(now, displayTz);
+    clockEl.textContent = `${p.hour}:${p.minute}:${p.second}`;
+    const zoneLabel = ZONE_OPTIONS.find(z=>z.tz===displayTz);
+    dateEl.textContent = `${p.weekday}, ${p.day}.${p.month}.${p.year} · ${zoneLabel?zoneLabel.label:displayTz}`;
+  }
+
+  function cardTemplate(ex){
+    return `
+      <article class="card" data-id="${ex.id}">
+        <div class="rule"></div>
+        <div class="card-top">
+          <div>
+            <div class="exname">${ex.name}</div>
+            <div class="excity">${ex.city}</div>
+          </div>
+          <span class="status" data-role="status"><span class="dot"></span><span data-role="statustext">–</span></span>
+        </div>
+        <div class="readout">
+          <div class="label" data-role="readoutlabel">–</div>
+          <div class="value" data-role="value">–</div>
+        </div>
+        <div class="progress"><i data-role="progress" style="width:0%"></i></div>
+        <div class="card-foot">
+          <div class="hours">${ex.open}–${ex.close} lokal (${shortTz(ex.tz)})</div>
+          ${ex.removable ? `<button class="removebtn" data-role="remove">entfernen</button>` : `<span></span>`}
+        </div>
+      </article>
+    `;
+  }
+
+  function shortTz(tz){
+    return tz.split("/").pop().replace(/_/g," ");
+  }
+
+  function renderGridSkeleton(){
+    const grid = document.getElementById("grid");
+    grid.innerHTML = exchanges.map(cardTemplate).join("");
+    exchanges.forEach(ex=>{
+      const card = grid.querySelector(`[data-id="${ex.id}"]`);
+      if(ex.removable){
+        card.querySelector('[data-role="remove"]').onclick = ()=> removeExchange(ex.id);
+      }
+    });
+  }
+
+  function updateCard(ex, now){
+    const card = document.querySelector(`.card[data-id="${ex.id}"]`);
+    if(!card) return;
+    const { isOpen, sessionOpenAt, next, events } = computeStatus(ex, now);
+
+    const statusEl = card.querySelector('[data-role="status"]');
+    const statusText = card.querySelector('[data-role="statustext"]');
+    statusEl.className = "status " + (isOpen ? "open" : "closed");
+    statusText.textContent = isOpen ? "Geöffnet" : "Geschlossen";
+
+    const labelEl = card.querySelector('[data-role="readoutlabel"]');
+    const valueEl = card.querySelector('[data-role="value"]');
+    const progressEl = card.querySelector('[data-role="progress"]');
+
+    if(!next){
+      labelEl.textContent = "Kein bevorstehendes Ereignis";
+      valueEl.textContent = "–";
+      valueEl.className = "value";
+      progressEl.style.width = "0%";
+      return;
+    }
+
+    const diff = next.at - now;
+    const isNear = diff <= NEAR_THRESHOLD_MS;
+    const kind = next.type === "open" ? "blue" : "red";
+    valueEl.className = "value " + kind;
+    labelEl.textContent = next.type === "open" ? "Öffnet" : "Schließt";
+
+    const newText = isNear
+      ? fmtCountdown(diff)
+      : fmtClockInTz(next.at, displayTz);
+
+    const suffixHtml = isNear
+      ? `<small>bis ${next.type === "open" ? "Start" : "Ende"}</small>`
+      : `<small>${displayTzShortLabel()}</small>`;
+
+    const key = ex.id;
+    const prev = lastRenderedSecond[key];
+    valueEl.innerHTML = newText + suffixHtml;
+    if(prev !== newText){
+      valueEl.classList.remove("flash");
+      void valueEl.offsetWidth;
+      valueEl.classList.add("flash");
+    }
+    lastRenderedSecond[key] = newText;
+
+    // progress bar: session progress while open
+    if(isOpen && sessionOpenAt){
+      const total = next.at - sessionOpenAt; // next is the close event
+      const elapsed = now - sessionOpenAt;
+      const pct = Math.min(100, Math.max(0, (elapsed/total)*100));
+      progressEl.style.width = pct + "%";
+    } else {
+      progressEl.style.width = "0%";
+    }
+  }
+
+  function displayTzShortLabel(){
+    const z = ZONE_OPTIONS.find(z=>z.tz===displayTz);
+    return z ? z.label.split("(").pop().replace(")","") : displayTz;
+  }
+
+  function renderAll(rebuildSkeleton){
+    const now = new Date();
+    renderClockBar(now);
+    if(rebuildSkeleton) renderGridSkeleton();
+    exchanges.forEach(ex=>updateCard(ex, now));
+  }
+
+  // ---------- add / remove ----------
+  function addExchange(ex){
+    exchanges.push(ex);
+    saveCustomExchanges();
+    renderAll(true);
+  }
+  function removeExchange(id){
+    exchanges = exchanges.filter(e=>e.id!==id);
+    delete lastRenderedSecond[id];
+    saveCustomExchanges();
+    renderAll(true);
+  }
+
+  function wirePresetButtons(){
+    document.querySelectorAll("[data-preset]").forEach(btn=>{
+      btn.onclick = ()=>{
+        const key = btn.getAttribute("data-preset");
+        const preset = PRESETS[key];
+        if(exchanges.some(e=>e.tz===preset.tz && e.name===preset.name)) return;
+        addExchange(Object.assign({}, preset, { id: preset.id + "_" + Math.random().toString(36).slice(2,7) }));
+      };
+    });
+  }
+
+  function wireDialog(){
+    const dlg = document.getElementById("dlg");
+    document.getElementById("openCustom").onclick = ()=>{
+      document.getElementById("fName").value = "";
+      document.getElementById("fCity").value = "";
+      document.getElementById("fTz").value = "";
+      document.getElementById("fOpen").value = "";
+      document.getElementById("fClose").value = "";
+      document.getElementById("fErr").textContent = "";
+      dlg.showModal();
+    };
+    document.getElementById("cancelCustom").onclick = ()=> dlg.close();
+
+    document.getElementById("saveCustom").onclick = ()=>{
+      const name = document.getElementById("fName").value.trim();
+      const city = document.getElementById("fCity").value.trim();
+      const tz = document.getElementById("fTz").value.trim();
+      const open = document.getElementById("fOpen").value.trim();
+      const close = document.getElementById("fClose").value.trim();
+      const errEl = document.getElementById("fErr");
+
+      const timeRe = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+      if(!name || !tz || !timeRe.test(open) || !timeRe.test(close)){
+        errEl.textContent = "Bitte Name, gültige Zeitzone und Zeiten im Format HH:MM angeben.";
+        return;
+      }
+      try{
+        new Intl.DateTimeFormat("en-US", { timeZone: tz });
+      }catch(e){
+        errEl.textContent = "Unbekannte Zeitzone. Beispiel: Europe/Paris";
+        return;
+      }
+      addExchange({
+        id: "custom_" + Math.random().toString(36).slice(2,9),
+        name, city: city || tz, tz,
+        open: open.length===4 ? "0"+open : open,
+        close: close.length===4 ? "0"+close : close,
+        removable: true
+      });
+      dlg.close();
+    };
+  }
+
+  // ---------- boot ----------
+  async function boot(){
+    await loadState();
+    populateZoneSelect();
+    populateTzDatalist();
+    wirePresetButtons();
+    wireDialog();
+    renderAll(true);
+    setInterval(()=>renderAll(false), 1000);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
