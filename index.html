@@ -30,6 +30,33 @@
   }
   .wrap{max-width:920px;margin:0 auto;}
 
+  /* Hamburger / Sektor-Menü */
+  .menubar{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .menubtn{
+    background:var(--panel-2);border:1px solid var(--hairline);color:var(--ink);
+    width:40px;height:40px;border-radius:10px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    position:relative;
+  }
+  .menubtn:hover{border-color:var(--gold-dim);}
+  .menubtn svg{width:18px;height:18px;}
+  .menudrop{
+    position:absolute; top:48px; left:0; z-index:50;
+    background:var(--panel-2); border:1px solid var(--hairline); border-radius:12px;
+    padding:6px; min-width:190px;
+    box-shadow:0 12px 28px rgba(0,0,0,.45);
+    display:none;
+  }
+  .menudrop.open{display:block;}
+  .menudrop a{
+    display:flex; align-items:center; gap:8px;
+    padding:10px 12px; border-radius:8px; color:var(--ink);
+    text-decoration:none; font-size:13.5px;
+  }
+  .menudrop a:hover{background:var(--panel);}
+  .menudrop a.active{color:var(--gold); font-weight:700;}
+  .menutitle{color:var(--gold);font-weight:700;font-size:14px;letter-spacing:.01em;}
+
   /* Header */
   header{display:flex;flex-direction:column;gap:18px;margin-bottom:28px;}
   .eyebrow{
@@ -171,6 +198,20 @@
 </head>
 <body>
 <div class="wrap">
+
+  <div class="menubar">
+    <div style="position:relative;">
+      <button class="menubtn" id="menuBtn" aria-label="Menü öffnen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="menudrop" id="menuDrop">
+        <div class="menutitle" style="padding:8px 12px 4px;">Werkzeuge</div>
+        <a href="./" class="active">📈 Börsenuhr</a>
+        <a href="./kursrechner/">🧮 Kursrechner</a>
+      </div>
+    </div>
+    <span class="menutitle" style="opacity:.85;">Börsenuhr</span>
+  </div>
 
   <header>
     <div>
@@ -601,8 +642,24 @@
     };
   }
 
+  // ---------- menu ----------
+  function wireMenu(){
+    const btn = document.getElementById("menuBtn");
+    const drop = document.getElementById("menuDrop");
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      drop.classList.toggle("open");
+    };
+    document.addEventListener("click", (e)=>{
+      if(!drop.contains(e.target) && e.target!==btn){
+        drop.classList.remove("open");
+      }
+    });
+  }
+
   // ---------- boot ----------
   async function boot(){
+    wireMenu();
     await loadState();
     populateZoneSelect();
     populateTzDatalist();
